@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 나만의 영화 티어리스트</title>
+    <style>
+        /* 전체 기본 스타일 */
+        body {
+            font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+        .description {
+            color: #aaaaaa;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        /* 컨트롤 버튼 영역 */
+        .controls {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .btn-danger {
+            background-color: #f44336;
+        }
+        .btn-danger:hover {
+            background-color: #da190b;
+        }
+
+        /* 티어리스트 컨테이너 */
+        #tierContainer {
+            width: 100%;
+            max-width: 1000px;
+            background-color: #000000;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 개별 티어 행 */
+        .tier-row {
+            display: flex;
+            border-bottom: 1px solid #333;
+            min-height: 120px;
+        }
+        .tier-row:last-child {
+            border-bottom: none;
+        }
+
+        /* 티어 라벨 (이름) */
+        .tier-label {
+            width: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+            padding: 10px;
+            outline: none;
+            word-break: keep-all;
+        }
+        /* 티어 라벨 수정 시 스타일 */
+        .tier-label:focus {
+            background-color: rgba(255, 255, 255, 0.8) !important;
+            color: #000 !important;
+        }
+
+        /* 이미지가 놓일 드롭존 */
+        .tier-dropzone {
+            flex-grow: 1;
+            background-color: #1a1a1a;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            padding: 10px;
+            gap: 10px;
+            transition: background-color 0.2s;
+        }
+        .tier-dropzone.drag-over {
+            background-color: #333333;
+        }
+
+        /* 행 삭제 버튼 영역 */
+        .tier-settings {
+            width: 50px;
+            background-color: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .delete-tier-btn {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+        }
+        .delete-tier-btn:hover {
+            color: #f44336;
+        }
+
+        /* 대기열 및 업로드 영역 */
+        .pool-container {
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 30px;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .pool-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .pool-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+        
+        /* 파일 업로드 디자인 */
+        .upload-btn-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .upload-btn-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* 대기열 드롭존 */
+        #unassignedPool {
+            min-height: 150px;
+            background-color: #1a1a1a;
+            border: 2px dashed #555;
+            border-radius: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            padding: 10px;
+            gap: 10px;
+        }
+        #unassignedPool.drag-over {
+            background-color: #333;
+            border-color: #888;
+        }
+
+        /* 영화 이미지 아이템 */
+        .movie-item {
+            width: 80px;
+            height: 115px;
+            background-color: #444;
+            background-size: cover;
+            background-position: center;
+            border-radius: 4px;
+            cursor: grab;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .movie-item:active {
+            cursor: grabbing;
+        }
+        /* 이미지 삭제 버튼 (X) */
+        .delete-img-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        .movie-item:hover .delete-img-btn {
+            display: flex;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>🎬 나만의 영화 티어리스트</h1>
+    <div class="description">이미지를 업로드하고 마우스로 끌어서 티어를 분류해보세요. (새로고침해도 저장됩니다!)</div>
+
+    <div class="controls">
+        <button id="addTierBtn">+ 새로운 티어 추가</button>
+        <button id="resetBtn" class="btn-danger">전체 초기화</button>
+    </div>
+
+    <!-- 티어리스트가 그려질 공간 -->
+    <div id="tierContainer"></div>
+
+    <!-- 분류 대기 중인 이미지 공간 -->
+    <div class="pool-container">
+        <div class="pool-header">
+            <h2>보관함 (분류 대기 중)</h2>
+            <div class="upload-btn-wrapper">
+                <button class="btn">이미지 업로드 (PC에서 선택)</button>
+                <input type="file" id="imageUpload" accept="image/*" multiple />
+            </div>
+        </div>
+        <div id="unassignedPool" class="tier-dropzone" data-tier-id="pool"></div>
+    </div>
+
+    <script>
+        // --- 1. 기본 데이터 설정 ---
+        const defaultTiers = [
+            { id: 't1', name: 'S', color: '#ff7f7f' },
+            { id: 't2', name: 'A', color: '#ffbf7f' },
+            { id: 't3', name: 'B', color: '#ffff7f' },
+            { id: 't4', name: 'C', color: '#7fff7f' },
+            { id: 't5', name: 'D', color: '#7fbfff' }
+        ];
+
+        // 상태 관리 변수
+        let tiers = [];
+        let images = []; // { id, dataUrl, tierId }
+
+        // DOM 요소
+        const tierContainer = document.getElementById('tierContainer');
+        const unassignedPool = document.getElementById('unassignedPool');
+        const imageUpload = document.getElementById('imageUpload');
+        const addTierBtn = document.getElementById('addTierBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // --- 2. 초기화 및 로컬 스토리지 관리 ---
+        function init() {
+            loadData();
+            renderTiers();
+            renderImages();
+            setupDragAndDrop(unassignedPool);
+        }
+
+        function loadData() {
+            const savedTiers = localStorage.getItem('movieTiers');
+            const savedImages = localStorage.getItem('movieImages');
+
+            if (savedTiers) {
+                tiers = JSON.parse(savedTiers);
+            } else {
+                tiers = JSON.parse(JSON.stringify(defaultTiers));
+            }
+
+            if (savedImages) {
+                images = JSON.parse(savedImages);
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('movieTiers', JSON.stringify(tiers));
+            localStorage.setItem('movieImages', JSON.stringify(images));
+        }
+
+        function resetData() {
+            if (confirm('정말 모든 티어와 이미지를 초기화하시겠습니까? 복구할 수 없습니다.')) {
+                localStorage.removeItem('movieTiers');
+                localStorage.removeItem('movieImages');
+                tiers = JSON.parse(JSON.stringify(defaultTiers));
+                images = [];
+                renderTiers();
+                renderImages();
+            }
+        }
+
+        // --- 3. 화면 그리기 (렌더링) ---
+        function renderTiers() {
+            tierContainer.innerHTML = ''; // 기존 내용 지우기
+
+            tiers.forEach(tier => {
+                const row = document.createElement('div');
+                row.className = 'tier-row';
+
+                // 라벨 (이름)
+                const label = document.createElement('div');
+                label.className = 'tier-label';
+                label.style.backgroundColor = tier.color;
+                label.innerText = tier.name;
+                label.contentEditable = true; // 텍스트 수정 가능
+                
+                // 이름 수정 시 저장
+                label.addEventListener('blur', (e) => {
+                    tier.name = e.target.innerText;
+                    saveData();
+                });
+
+                // 드롭존 (이미지 놓는 곳)
+                const dropzone = document.createElement('div');
+                dropzone.className = 'tier-dropzone';
+                dropzone.dataset.tierId = tier.id;
+                setupDragAndDrop(dropzone);
+
+                // 설정 (삭제 버튼)
+                const settings = document.createElement('div');
+                settings.className = 'tier-settings';
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-tier-btn';
+                deleteBtn.innerHTML = '×';
+                deleteBtn.title = '티어 삭제';
+                deleteBtn.onclick = () => deleteTier(tier.id);
+                settings.appendChild(deleteBtn);
+
+                row.appendChild(label);
+                row.appendChild(dropzone);
+                row.appendChild(settings);
+                tierContainer.appendChild(row);
+            });
+        }
+
+        function renderImages() {
+            // 모든 드롭존 비우기
+            document.querySelectorAll('.tier-dropzone').forEach(zone => {
+                zone.innerHTML = '';
+            });
+
+            // 이미지 배치
+            images.forEach(imgData => {
+                const imgEl = document.createElement('div');
+                imgEl.className = 'movie-item';
+                imgEl.style.backgroundImage = `url(${imgData.dataUrl})`;
+                imgEl.draggable = true;
+                imgEl.dataset.imageId = imgData.id;
+
+                // 드래그 시작 이벤트
+                imgEl.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', imgData.id);
+                    setTimeout(() => imgEl.style.opacity = '0.5', 0);
+                });
+                imgEl.addEventListener('dragend', () => {
+                    imgEl.style.opacity = '1';
+                });
+
+                // 이미지 삭제 버튼
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-img-btn';
+                delBtn.innerHTML = '×';
+                delBtn.onclick = (e) => {
+                    e.stopPropagation(); // 드래그 이벤트 방해 금지
+                    deleteImage(imgData.id);
+                };
+                imgEl.appendChild(delBtn);
+
+                // 알맞은 위치(티어 또는 보관함)에 추가
+                const targetZone = document.querySelector(`.tier-dropzone[data-tier-id="${imgData.tierId}"]`);
+                if (targetZone) {
+                    targetZone.appendChild(imgEl);
+                } else {
+                    // 티어가 삭제되어 길을 잃은 이미지는 보관함으로
+                    imgData.tierId = 'pool';
+                    unassignedPool.appendChild(imgEl);
+                    saveData();
+                }
+            });
+        }
+
+        // --- 4. 기능 구현 (추가, 삭제, 드래그 앤 드롭) ---
+        function addTier() {
+            const newId = 't' + Date.now();
+            const colors = ['#ff7f7f', '#ffbf7f', '#ffff7f', '#7fff7f', '#7fbfff', '#bf7fff', '#ff7fbf', '#cccccc'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            tiers.push({
+                id: newId,
+                name: 'NEW',
+                color: randomColor
+            });
+            saveData();
+            renderTiers();
+            renderImages(); // 드롭존이 새로 생겼으므로 이미지 다시 배치
+        }
+
+        function deleteTier(tierId) {
+            if (tiers.length <= 1) {
+                alert('최소 1개의 티어는 남겨두어야 합니다.');
+                return;
+            }
+            if (confirm('이 티어를 삭제하시겠습니까? 포함된 영화는 보관함으로 이동합니다.')) {
+                tiers = tiers.filter(t => t.id !== tierId);
+                // 삭제된 티어에 있던 이미지들을 보관함으로 이동
+                images.forEach(img => {
+                    if (img.tierId === tierId) img.tierId = 'pool';
+                });
+                saveData();
+                renderTiers();
+                renderImages();
+            }
+        }
+
+        function deleteImage(imageId) {
+            images = images.filter(img => img.id !== imageId);
+            saveData();
+            renderImages();
+        }
+
+        // 드래그 앤 드롭 설정 함수
+        function setupDragAndDrop(zone) {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault(); // 드롭 허용
+                zone.classList.add('drag-over');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('drag-over');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                
+                const imageId = e.dataTransfer.getData('text/plain');
+                const newTierId = zone.dataset.tierId;
+
+                // 이미지 데이터 업데이트
+                const imageIndex = images.findIndex(img => img.id === imageId);
+                if (imageIndex > -1) {
+                    images[imageIndex].tierId = newTierId;
+                    saveData();
+                    renderImages();
+                }
+            });
+        }
+
+        // --- 5. 이미지 업로드 및 압축 (Local Storage 용량 확보) ---
+        imageUpload.addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        // Canvas를 이용해 이미지 크기 줄이기 (압축)
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 150; // 최대 너비 제한
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        // 압축된 이미지를 Base64 문자열로 변환 (품질 0.7)
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+                        // 데이터에 추가
+                        images.push({
+                            id: 'img' + Date.now() + Math.floor(Math.random()*1000),
+                            dataUrl: compressedDataUrl,
+                            tierId: 'pool' // 처음엔 무조건 보관함으로
+                        });
+                        
+                        saveData();
+                        renderImages();
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            
+            // 입력창 초기화 (같은 파일 다시 올릴 수 있게)
+            imageUpload.value = '';
+        });
+
+        // 이벤트 리스너 등록
+        addTierBtn.addEventListener('click', addTier);
+        resetBtn.addEventListener('click', resetData);
+
+        // 앱 시작
+        init();
+
+    </script>
+</body>
+</html>
